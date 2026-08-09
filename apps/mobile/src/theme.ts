@@ -1,11 +1,16 @@
+// Matches the wireframe artifact's dark B&W palette (see the artifact's
+// :root[data-theme="dark"] tokens) — deliberately no accent hue. "accent"
+// here means the same thing it means there: near-white used for
+// interactive/selected state, not a color identity. Swap these values
+// (not the call sites) if/when a real brand palette replaces this MVP pass.
 export const theme = {
-  background: "#0B0B14",
-  surface: "#16162A",
-  border: "#2A2A45",
-  text: "#F4F3FA",
-  textMuted: "#9C9AB8",
-  accent: "#C9A6FF",
-  accentMuted: "#6E5B99",
-  definedCenter: "#C9A6FF",
-  undefinedCenter: "#2A2A45",
+  background: "#0A0A0A",
+  surface: "#161616",
+  border: "#2A2A2A",
+  text: "#F2F2F2",
+  textMuted: "#A0A0A0",
+  accent: "#F2F2F2",
+  accentMuted: "#656565",
+  definedCenter: "#F2F2F2",
+  undefinedCenter: "#2A2A2A",
 };
