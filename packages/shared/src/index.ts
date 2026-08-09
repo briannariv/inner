@@ -166,6 +166,41 @@ export interface InterpretationResult {
   body: string;
 }
 
+// ---- Compatibility / synastry ----
+
+// Which of the 36 HD channels connect two people, and how:
+//  - companionship: both people independently have the full channel
+//  - electromagnetic: neither has it alone, but together the two gates complete it
+//  - dominance: one person has the full channel, the other has neither gate
+export type HDConnectionType = "companionship" | "electromagnetic" | "dominance";
+
+export interface HDConnectionChannel {
+  gates: [number, number];
+  name: string;
+  type: HDConnectionType;
+  dominantPerson?: "A" | "B"; // set only when type is "dominance"
+}
+
+export interface CompatibilityPerson {
+  name: string;
+  birthData: BirthData;
+}
+
+export interface CompatibilityRequest {
+  personA: CompatibilityPerson;
+  personB: CompatibilityPerson;
+}
+
+export interface CompatibilityResult {
+  personA: { name: string; chart: ChartBundle };
+  personB: { name: string; chart: ChartBundle };
+  // Cross-chart aspects — by convention `a` is always personA's planet,
+  // `b` is always personB's planet (matches computeCrossAspects(A, B)).
+  synastryAspects: Aspect[];
+  hdConnections: HDConnectionChannel[];
+  summary: InterpretationResult;
+}
+
 // ---- Education / reference content ----
 
 export type ZodiacElement = "fire" | "earth" | "air" | "water";

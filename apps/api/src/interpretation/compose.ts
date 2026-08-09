@@ -2,7 +2,7 @@
 // description" (SPEC.md §2.2/§2.3/§4). It reads placement + aspects (or
 // center + defined-state) out of the already-computed chart and stitches
 // together content-block strings — it never hard-codes per-user text.
-import type { ChartAngle, ChartBundle, InterpretationRequest, InterpretationResult } from "@inner/shared";
+import type { Aspect, ChartAngle, ChartBundle, HDConnectionChannel, InterpretationRequest, InterpretationResult } from "@inner/shared";
 import { ANGLE_KEYWORDS, ASPECT_KEYWORDS, HOUSE_KEYWORDS, PLANET_KEYWORDS, SIGN_KEYWORDS } from "./astrologyContent.js";
 import { AUTHORITY_DESCRIPTIONS, CENTER_DESCRIPTIONS, TYPE_DESCRIPTIONS } from "./humanDesignContent.js";
 
@@ -92,4 +92,49 @@ export function composeTypeAndAuthoritySummary(chart: ChartBundle): Interpretati
     headline: `${hd.type} · ${hd.profile} Profile · ${hd.authority} Authority`,
     body: `${TYPE_DESCRIPTIONS[hd.type]} ${AUTHORITY_DESCRIPTIONS[hd.authority]}`,
   };
+}
+
+// The dual-system synthesis SPEC.md §2.5 flags as the hardest content
+// problem in the app — this is a v1 attempt at one narrative that actually
+// ties the astrology and HD signals together, not two separate paragraphs.
+export function composeCompatibilitySummary(
+  nameA: string,
+  nameB: string,
+  synastryAspects: Aspect[],
+  hdConnections: HDConnectionChannel[]
+): InterpretationResult {
+  const soft = new Set(["trine", "sextile"]);
+  const hard = new Set(["square", "opposition"]);
+  const harmonious = synastryAspects.filter((a) => soft.has(a.type)).length;
+  const challenging = synastryAspects.filter((a) => hard.has(a.type)).length;
+  const fused = synastryAspects.filter((a) => a.type === "conjunction").length;
+
+  const electromagnetic = hdConnections.filter((c) => c.type === "electromagnetic").length;
+  const companionship = hdConnections.filter((c) => c.type === "companionship").length;
+  const dominance = hdConnections.filter((c) => c.type === "dominance").length;
+
+  const parts: string[] = [
+    `${nameA} and ${nameB} share ${synastryAspects.length} astrological aspects — ` +
+      `${harmonious} flowing, ${challenging} friction-generating, ${fused} fused/intensified.`,
+  ];
+
+  if (electromagnetic > 0) {
+    parts.push(
+      `On the Human Design side, ${electromagnetic} channel${electromagnetic === 1 ? "" : "s"} exist only between you — ` +
+        `neither of you has ${electromagnetic === 1 ? "it" : "them"} alone, the classic signature of magnetic attraction.`
+    );
+  }
+  if (companionship > 0) {
+    parts.push(`${companionship} channel${companionship === 1 ? "" : "s"} you both carry independently — real common ground, not just chemistry.`);
+  }
+  if (dominance > 0) {
+    parts.push(
+      `${dominance} channel${dominance === 1 ? "" : "s"} ${dominance === 1 ? "runs" : "run"} one-directionally — one of you consistently supplies energy the other doesn't generate on their own.`
+    );
+  }
+  if (electromagnetic === 0 && companionship === 0 && dominance === 0) {
+    parts.push("No Human Design channels connect your two charts directly — whatever pull exists here is running through the astrology layer, not the energetic one.");
+  }
+
+  return { headline: `${nameA} × ${nameB}`, body: parts.join(" ") };
 }

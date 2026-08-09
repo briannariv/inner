@@ -11,11 +11,12 @@ import { getAstrocartography, getInterpretation, getTransits } from "../api/clie
 import { NatalWheel } from "../components/NatalWheel";
 import { Bodygraph } from "../components/Bodygraph";
 import { AstrocartographyMap } from "../components/AstrocartographyMap";
+import { CompatibilityView } from "../components/CompatibilityView";
 import { InterpretationPanel } from "../components/InterpretationPanel";
 import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Chart">;
-type Tab = "astrology" | "humanDesign" | "astrocartography" | "learn";
+type Tab = "astrology" | "humanDesign" | "astrocartography" | "compatibility" | "learn";
 
 function describeAstrocartographyLine(line: AstrocartographyLine): string {
   return (
@@ -128,6 +129,7 @@ export function ChartScreen({ route }: Props) {
         <TabButton label="Astrology" active={tab === "astrology"} onPress={() => setTab("astrology")} />
         <TabButton label="Human Design" active={tab === "humanDesign"} onPress={() => setTab("humanDesign")} />
         <TabButton label="Astrocartography" active={tab === "astrocartography"} onPress={openAstrocartographyTab} />
+        <TabButton label="Compatibility" active={tab === "compatibility"} onPress={() => setTab("compatibility")} />
         <TabButton label="Learn" active={tab === "learn"} onPress={() => setTab("learn")} />
       </ScrollView>
 
@@ -187,6 +189,16 @@ export function ChartScreen({ route }: Props) {
               </>
             )}
           </>
+        )}
+        {tab === "compatibility" && (
+          <CompatibilityView
+            myName="You"
+            myBirthData={bundle.natal.birthData}
+            onShowDetail={(headline, body) => {
+              setPanelVisible(true);
+              setPanelResult({ headline, body });
+            }}
+          />
         )}
         {tab === "learn" && (
           <>

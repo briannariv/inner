@@ -1,5 +1,6 @@
 import type {
-  AstrocartographyResult, BirthData, ChartBundle, InterpretationRequest, InterpretationResult, TransitSnapshot,
+  AstrocartographyResult, BirthData, ChartBundle, CompatibilityRequest, CompatibilityResult,
+  InterpretationRequest, InterpretationResult, TransitSnapshot,
 } from "@inner/shared";
 import { API_BASE_URL } from "../config";
 
@@ -34,4 +35,8 @@ export function getHdSummary(chart: ChartBundle): Promise<InterpretationResult> 
 
 export function getAstrocartography(birthData: BirthData): Promise<AstrocartographyResult> {
   return post<AstrocartographyResult>("/charts/astrocartography", birthData);
+}
+
+export function getCompatibility(request: CompatibilityRequest): Promise<CompatibilityResult> {
+  return post<CompatibilityResult>("/compatibility/synastry", request);
 }
