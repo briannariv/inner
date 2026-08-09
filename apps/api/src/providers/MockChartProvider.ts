@@ -5,11 +5,12 @@
 // nothing outside this file should need to change.
 import { randomUUID } from "node:crypto";
 import type {
-  BirthData, ChartBundle, HDAuthority, HDCenterName, HDChart, HDGateActivation, HDType,
+  BirthData, ChartBundle, HDChart, HDGateActivation,
   HouseCusp, NatalChart, Planet, PlanetPlacement, TransitSnapshot,
 } from "@inner/shared";
 import { computeAspects, computeCrossAspects, equalHouseCusps, houseForDegree, normalizeDegree, signForDegree } from "../astro/geometry.js";
-import { CENTERS, CHANNELS, GATE_CENTER, MOTOR_CENTERS } from "../hd/reference.js";
+import { GATE_CENTER } from "../hd/reference.js";
+import { deriveHumanDesignChart } from "../hd/derive.js";
 import { SeededRandom } from "../util/seededRandom.js";
 import type { ChartProvider } from "./ChartProvider.js";
 
@@ -77,80 +78,30 @@ function buildHouses(cusps: number[]): HouseCusp[] {
   });
 }
 
-const PROFILES = ["1/3", "1/4", "2/4", "2/5", "3/5", "3/6", "4/6", "4/1", "5/1", "5/2", "6/2", "6/3"];
-
 function buildHumanDesign(rand: SeededRandom): HDChart {
   const gateNumbers = Object.keys(GATE_CENTER).map(Number);
   const activatedCount = rand.int(22, 30); // real charts typically activate ~26 of 64 gates
   const shuffled = [...gateNumbers].sort(() => rand.next() - 0.5);
-  const activatedGates = new Set(shuffled.slice(0, activatedCount));
+  const activatedGates = shuffled.slice(0, activatedCount);
 
-  const gates: HDGateActivation[] = [...activatedGates].map((gate, i) => ({
-    gate,
-    line: rand.int(1, 6),
-    planet: rand.pick(PLANETS),
-    source: i % 2 === 0 ? "personality" : "design",
-  }));
+  // Force a Sun activation on both sides so Profile (derived from the Sun's
+  // personality/design line) is always resolvable, then fill in the rest.
+  const gates: HDGateActivation[] = [
+    { gate: activatedGates[0], line: rand.int(1, 6), planet: "Sun", source: "personality" },
+    { gate: activatedGates[1], line: rand.int(1, 6), planet: "Sun", source: "design" },
+    // Real charts activate each planet's gate exactly once per side — exclude
+    // Sun here since it's already forced above, so the UI doesn't show two
+    // "Sun" gates on the same side (Profile derivation still only reads the
+    // forced pair, but duplicate Sun gates would be a confusing mock artifact).
+    ...activatedGates.slice(2).map((gate, i): HDGateActivation => ({
+      gate,
+      line: rand.int(1, 6),
+      planet: rand.pick(PLANETS.filter((p) => p !== "Sun")),
+      source: i % 2 === 0 ? "personality" : "design",
+    })),
+  ];
 
-  const channels = CHANNELS.map((c) => ({
-    gates: c.gates,
-    name: c.name,
-    defined: activatedGates.has(c.gates[0]) && activatedGates.has(c.gates[1]),
-  }));
-
-  const definedCenterSet = new Set<HDCenterName>();
-  for (const c of channels) {
-    if (c.defined) {
-      definedCenterSet.add(GATE_CENTER[c.gates[0]]);
-      definedCenterSet.add(GATE_CENTER[c.gates[1]]);
-    }
-  }
-  const centers = CENTERS.map((name) => ({ name, defined: definedCenterSet.has(name) }));
-
-  const sacralDefined = definedCenterSet.has("Sacral");
-  const throatDefined = definedCenterSet.has("Throat");
-  const otherMotorDefined = MOTOR_CENTERS.some((c) => c !== "Sacral" && definedCenterSet.has(c));
-  const noneDefined = definedCenterSet.size === 0;
-
-  let type: HDType;
-  let strategy: string;
-  if (noneDefined) {
-    type = "Reflector";
-    strategy = "Wait a full lunar cycle (~28 days) before major decisions";
-  } else if (sacralDefined) {
-    type = throatDefined ? "Manifesting Generator" : "Generator";
-    strategy = "Respond";
-  } else if (throatDefined && otherMotorDefined) {
-    type = "Manifestor";
-    strategy = "Inform before acting";
-  } else {
-    type = "Projector";
-    strategy = "Wait for the invitation";
-  }
-
-  let authority: HDAuthority;
-  if (definedCenterSet.has("Solar Plexus")) authority = "Emotional";
-  else if (sacralDefined) authority = "Sacral";
-  else if (definedCenterSet.has("Spleen")) authority = "Splenic";
-  else if (definedCenterSet.has("Heart")) authority = "Ego";
-  else if (definedCenterSet.has("G") && throatDefined) authority = "Self-Projected";
-  else if (noneDefined) authority = "Lunar";
-  else authority = "Mental";
-
-  const sunPersonalityGate = gates.find((g) => g.planet === "Sun" && g.source === "personality")?.gate
-    ?? gates[0]?.gate ?? 1;
-
-  return {
-    id: randomUUID(),
-    type,
-    strategy,
-    authority,
-    profile: rand.pick(PROFILES),
-    incarnationCross: `Placeholder Cross of Gate ${sunPersonalityGate} — real cross naming requires the hosted HD API`,
-    centers,
-    gates,
-    channels,
-  };
+  return { id: randomUUID(), ...deriveHumanDesignChart(gates) };
 }
 
 export class MockChartProvider implements ChartProvider {

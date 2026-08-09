@@ -10,5 +10,15 @@ export function createServer() {
   app.get("/health", (_req, res) => res.json({ ok: true }));
   app.use("/charts", chartsRouter);
 
+  // Centralized error handler — every route uses asyncHandler() to funnel
+  // rejected promises here instead of hanging the request. 4-arg signature
+  // is required by Express to recognize this as error middleware.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(message);
+    res.status(502).json({ error: message });
+  });
+
   return app;
 }

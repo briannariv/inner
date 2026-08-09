@@ -125,7 +125,9 @@ No ads at any tier — the free tier has to feel generous on its own (this is a 
 - [Bodygraph.com](https://bodygraph.com/human-design-api/) — chart data + rendered bodygraph images.
 - [dturkuler/humandesign_api](https://github.com/dturkuler/humandesign_api) (GitHub, Swiss-Ephemeris-based, open source) — another possible self-hosted fallback later, worth keeping on the radar for the post-MVP migration.
 
-Next step before contracting: compare these on pricing at expected volume, data completeness (does it give lines/profile/incarnation cross, not just gates), and rate limits — not done yet, flagging as a pre-launch task rather than picking one blind here.
+**Update: wired in.** `astrologyapi.com` (astrology) and `humandesignapi.nl` (Human Design) are now implemented behind `HostedChartProvider` (`apps/api/src/providers/hosted/`), selected via `CHART_PROVIDER=hosted`. This was built without live docs access (blocked by this environment's network policy) or API credentials, so the request shapes are solid but response field-mapping is best-effort and unverified — see the README's integration-status note. Still open before this can be trusted in production: real API keys, a live test call to confirm/patch the field mapping, and the pricing/rate-limit comparison below.
+
+Pricing at expected volume, data completeness (lines/profile/incarnation cross vs. just gates), and rate limits across alternatives — not compared yet, flagging as a pre-launch task.
 
 ---
 

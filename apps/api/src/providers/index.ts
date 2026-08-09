@@ -5,14 +5,17 @@
 // one-file change instead of a rewrite.
 import type { ChartProvider } from "./ChartProvider.js";
 import { MockChartProvider } from "./MockChartProvider.js";
+import { HostedChartProvider } from "./hosted/HostedChartProvider.js";
 
-// TODO once a vendor from SPEC.md §6 is contracted:
-//   - Add `HostedAstrologyApiProvider implements ChartProvider` here, calling
-//     out to the chosen astrology + HD hosted APIs and mapping their
-//     response shapes onto ChartBundle/TransitSnapshot.
-//   - Read the vendor API key from process.env, fail fast at startup if
-//     CHART_PROVIDER=hosted but the key is missing.
-//   - Swap the branch below; no route/interpretation/mobile code changes.
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `CHART_PROVIDER=hosted requires ${name} to be set. See .env.example / README.md.`
+    );
+  }
+  return value;
+}
 
 let cached: ChartProvider | null = null;
 
@@ -23,8 +26,18 @@ export function getChartProvider(): ChartProvider {
       case "mock":
         cached = new MockChartProvider();
         break;
+      case "hosted":
+        // Vendors chosen per SPEC.md §6: astrologyapi.com (natal chart) +
+        // humandesignapi.nl (bodygraph). Field-mapping confidence caveats
+        // are documented in providers/hosted/*.ts — this integration hasn't
+        // been exercised against a real account yet.
+        cached = new HostedChartProvider(
+          { userId: requireEnv("ASTROLOGY_API_USER_ID"), apiKey: requireEnv("ASTROLOGY_API_KEY") },
+          { apiKey: requireEnv("HD_API_KEY") }
+        );
+        break;
       default:
-        throw new Error(`Unknown CHART_PROVIDER "${kind}" — only "mock" is implemented so far.`);
+        throw new Error(`Unknown CHART_PROVIDER "${kind}" — expected "mock" or "hosted".`);
     }
   }
   return cached;
