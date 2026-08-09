@@ -2,6 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { getChartProvider } from "../providers/index.js";
 import { composeInterpretation, composeTypeAndAuthoritySummary } from "../interpretation/compose.js";
+import { computeAstrocartographyLines } from "../astro/astrocartography.js";
+import { resolveBirthInstantUtc } from "../util/timezone.js";
 import { asyncHandler } from "../util/asyncHandler.js";
 import type { InterpretationRequest } from "@inner/shared";
 
@@ -55,4 +57,19 @@ chartsRouter.post("/hd-summary", asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Expected { chart }" });
   }
   res.json(composeTypeAndAuthoritySummary(body.chart));
+}));
+
+chartsRouter.post("/astrocartography", asyncHandler(async (req, res) => {
+  const parsed = birthDataSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+  const birthData = parsed.data;
+  if (!birthData.time) {
+    return res.status(400).json({ error: "Astrocartography requires a known birth time." });
+  }
+  const bundle = await getChartProvider().getChartBundle(birthData);
+  const utcInstant = resolveBirthInstantUtc(birthData.date, birthData.time, birthData.location.lat, birthData.location.lon);
+  const lines = computeAstrocartographyLines(bundle.natal.placements, utcInstant);
+  res.json({ lines });
 }));

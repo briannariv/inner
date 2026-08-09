@@ -19,6 +19,11 @@ export interface GeoLocation {
   lon: number;
 }
 
+export interface GeoPoint {
+  lat: number;
+  lon: number;
+}
+
 export interface BirthData {
   date: string; // YYYY-MM-DD
   time: string | null; // HH:mm, 24h — null means unknown/unrated time
@@ -47,11 +52,23 @@ export interface Aspect {
   orb: number; // degrees off exact
 }
 
+export interface ChartAngle {
+  sign: ZodiacSign;
+  degreeInSign: number;
+  absoluteDegree: number;
+}
+
 export interface NatalChart {
   id: string;
   birthData: BirthData;
-  ascendant: { sign: ZodiacSign; degreeInSign: number } | null; // null if birth time unknown
-  midheaven: { sign: ZodiacSign; degreeInSign: number } | null;
+  ascendant: ChartAngle | null; // null if birth time unknown
+  midheaven: ChartAngle | null;
+  // Vertex/Anti-Vertex — placeholder points pending a real ephemeris (see
+  // MockChartProvider), same caveat as ascendant/midheaven. South Node is
+  // exact opposite of the North Node placement — real math, not mock.
+  vertex: ChartAngle | null;
+  antiVertex: ChartAngle | null;
+  southNode: ChartAngle | null;
   placements: PlanetPlacement[];
   houses: HouseCusp[]; // empty if birth time unknown
   aspects: Aspect[];
@@ -111,14 +128,31 @@ export interface ChartBundle {
   humanDesign: HDChart;
 }
 
+// ---- Astrocartography ----
+
+export interface AstrocartographyLine {
+  planet: Planet;
+  mcLongitude: number; // signed, -180..180 — a full meridian, valid at every latitude
+  icLongitude: number;
+  acPoints: GeoPoint[]; // sampled curve; gaps where the body never rises/sets at that latitude
+  dcPoints: GeoPoint[];
+}
+
+export interface AstrocartographyResult {
+  lines: AstrocartographyLine[];
+}
+
 // ---- Interpretation ----
+
+export type ChartAngleName = "Ascendant" | "Midheaven" | "Vertex" | "AntiVertex" | "SouthNode";
 
 export interface InterpretationRequest {
   chart: ChartBundle;
   focus:
     | { kind: "planet"; planet: Planet }
     | { kind: "hdCenter"; center: HDCenterName }
-    | { kind: "hdGate"; gate: number };
+    | { kind: "hdGate"; gate: number }
+    | { kind: "angle"; angle: ChartAngleName };
 }
 
 export interface InterpretationResult {

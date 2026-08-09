@@ -2,7 +2,7 @@
 // 0-360 degree longitudes, so they work the same whether the longitude
 // came from the mock provider or a real ephemeris later — nothing here
 // is vendor-specific and none of it needs to change when we swap providers.
-import type { ZodiacSign, AspectType, Aspect, Planet } from "@inner/shared";
+import type { ZodiacSign, AspectType, Aspect, ChartAngle, Planet } from "@inner/shared";
 
 const SIGNS: ZodiacSign[] = [
   "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -20,11 +20,23 @@ export function signForDegree(absoluteDegree: number): { sign: ZodiacSign; degre
   return { sign: SIGNS[index], degreeInSign: d - index * 30 };
 }
 
-// Equal house system from the ascendant — simplest correct house system to
-// implement without an ephemeris library; production can swap in
-// Placidus/Whole Sign/etc. from the hosted API's house-system option.
-export function equalHouseCusps(ascendantDegree: number): number[] {
-  return Array.from({ length: 12 }, (_, i) => normalizeDegree(ascendantDegree + i * 30));
+// Same as signForDegree but for chart angles (Ascendant, MC, Vertex, ...)
+// where callers also need the raw absolute degree for wheel/map math.
+export function angleForDegree(absoluteDegree: number): ChartAngle {
+  const d = normalizeDegree(absoluteDegree);
+  return { ...signForDegree(d), absoluteDegree: d };
+}
+
+// Whole Sign houses: House 1 is the entire sign the Ascendant falls in
+// (cusp = 0° of that sign, not the Ascendant's exact degree), each
+// subsequent house is the next whole sign. This means the Ascendant and
+// Midheaven are floating points *within* their houses rather than defining
+// the House 1/10 cusps — real behavior of this system, not a bug — so
+// callers should keep drawing ASC/MC from natal.ascendant/midheaven
+// separately from the house cusp lines.
+export function wholeSignHouseCusps(ascendantDegree: number): number[] {
+  const firstHouseSignStart = Math.floor(normalizeDegree(ascendantDegree) / 30) * 30;
+  return Array.from({ length: 12 }, (_, i) => normalizeDegree(firstHouseSignStart + i * 30));
 }
 
 export function houseForDegree(absoluteDegree: number, houseCusps: number[]): number {

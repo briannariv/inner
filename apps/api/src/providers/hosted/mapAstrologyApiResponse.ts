@@ -4,8 +4,8 @@
 // and every extraction step throws a specific, debuggable error instead of
 // guessing, so a real test call surfaces exactly what needs adjusting.
 import { z } from "zod";
-import type { HouseCusp, Planet, PlanetPlacement, ZodiacSign } from "@inner/shared";
-import { computeAspects, normalizeDegree, signForDegree } from "../../astro/geometry.js";
+import type { ChartAngle, HouseCusp, Planet, PlanetPlacement, ZodiacSign } from "@inner/shared";
+import { angleForDegree, computeAspects, normalizeDegree, signForDegree } from "../../astro/geometry.js";
 
 const PLANET_NAME_MAP: Record<string, Planet> = {
   Sun: "Sun", Moon: "Moon", Mercury: "Mercury", Venus: "Venus", Mars: "Mars",
@@ -64,8 +64,15 @@ const ZODIAC_ORDER: ZodiacSign[] = [
 export interface MappedNatalData {
   placements: PlanetPlacement[];
   houses: HouseCusp[];
-  ascendant: { sign: ZodiacSign; degreeInSign: number } | null;
-  midheaven: { sign: ZodiacSign; degreeInSign: number } | null;
+  ascendant: ChartAngle | null;
+  midheaven: ChartAngle | null;
+  // Neither point is in astrologyapi.com's western_horoscope response —
+  // Vertex/Anti-Vertex stay null here until a provider that supplies them is
+  // wired in; South Node is derived for real from the North Node (Rahu)
+  // placement whenever one is present.
+  vertex: ChartAngle | null;
+  antiVertex: ChartAngle | null;
+  southNode: ChartAngle | null;
   aspects: ReturnType<typeof computeAspects>;
 }
 
@@ -129,11 +136,17 @@ export function mapAstrologyApiResponse(raw: unknown): MappedNatalData {
     rawHouses.find((h) => (h.house ?? h.house_number) === 10)?.start_degree ??
     null;
 
+  const northNode = placements.find((p) => p.planet === "NorthNode");
+  const southNodeDegree = northNode ? normalizeDegree(northNode.absoluteDegree + 180) : null;
+
   return {
     placements,
     houses,
-    ascendant: ascendantDegree !== null ? signForDegree(ascendantDegree) : null,
-    midheaven: midheavenDegree !== null ? signForDegree(midheavenDegree) : null,
+    ascendant: ascendantDegree !== null ? angleForDegree(ascendantDegree) : null,
+    midheaven: midheavenDegree !== null ? angleForDegree(midheavenDegree) : null,
+    vertex: null,
+    antiVertex: null,
+    southNode: southNodeDegree !== null ? angleForDegree(southNodeDegree) : null,
     aspects: computeAspects(placements),
   };
 }

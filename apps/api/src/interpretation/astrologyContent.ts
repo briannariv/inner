@@ -4,7 +4,7 @@
 // compose engine and the interactive chart UI have real text to render
 // end-to-end; treat every string below as a placeholder to rewrite in your
 // own voice, not final content.
-import type { AspectType, Planet, ZodiacSign } from "@inner/shared";
+import type { AspectType, ChartAngleName, Planet, ZodiacSign } from "@inner/shared";
 
 export const PLANET_KEYWORDS: Record<Planet, string> = {
   Sun: "your core identity and vitality",
@@ -58,4 +58,12 @@ export const ASPECT_KEYWORDS: Record<AspectType, string> = {
   square: "creates productive friction with",
   opposition: "pulls into balance against",
   quincunx: "asks for ongoing adjustment with",
+};
+
+export const ANGLE_KEYWORDS: Record<ChartAngleName, string> = {
+  Ascendant: "how you meet the world on first impression — your instinctive interface, not necessarily your core identity",
+  Midheaven: "your public role and the direction your life's work points toward",
+  Vertex: "a point often tied to encounters and turning points that feel handed to you rather than chosen",
+  AntiVertex: "the counterpart to your Vertex — points toward what grounds you after those handed-to-you turning points",
+  SouthNode: "the instincts and patterns that come easily because they're familiar — comfortable, but not where your growth edge is (that's the North Node)",
 };

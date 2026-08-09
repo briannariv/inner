@@ -2,8 +2,8 @@
 // description" (SPEC.md §2.2/§2.3/§4). It reads placement + aspects (or
 // center + defined-state) out of the already-computed chart and stitches
 // together content-block strings — it never hard-codes per-user text.
-import type { ChartBundle, InterpretationRequest, InterpretationResult } from "@inner/shared";
-import { ASPECT_KEYWORDS, HOUSE_KEYWORDS, PLANET_KEYWORDS, SIGN_KEYWORDS } from "./astrologyContent.js";
+import type { ChartAngle, ChartBundle, InterpretationRequest, InterpretationResult } from "@inner/shared";
+import { ANGLE_KEYWORDS, ASPECT_KEYWORDS, HOUSE_KEYWORDS, PLANET_KEYWORDS, SIGN_KEYWORDS } from "./astrologyContent.js";
 import { AUTHORITY_DESCRIPTIONS, CENTER_DESCRIPTIONS, TYPE_DESCRIPTIONS } from "./humanDesignContent.js";
 
 function composePlanet(chart: ChartBundle, planet: InterpretationRequest["focus"] & { kind: "planet" }): InterpretationResult {
@@ -55,6 +55,24 @@ function composeHDGate(chart: ChartBundle, focus: InterpretationRequest["focus"]
   };
 }
 
+function composeAngle(chart: ChartBundle, focus: InterpretationRequest["focus"] & { kind: "angle" }): InterpretationResult {
+  const angleByName: Record<string, ChartAngle | null> = {
+    Ascendant: chart.natal.ascendant,
+    Midheaven: chart.natal.midheaven,
+    Vertex: chart.natal.vertex,
+    AntiVertex: chart.natal.antiVertex,
+    SouthNode: chart.natal.southNode,
+  };
+  const point = angleByName[focus.angle];
+  if (!point) {
+    return { headline: focus.angle, body: "Not available for this chart (birth time may be unknown)." };
+  }
+  return {
+    headline: `${focus.angle} in ${point.sign}`,
+    body: `${ANGLE_KEYWORDS[focus.angle]}.`,
+  };
+}
+
 export function composeInterpretation(request: InterpretationRequest): InterpretationResult {
   switch (request.focus.kind) {
     case "planet":
@@ -63,6 +81,8 @@ export function composeInterpretation(request: InterpretationRequest): Interpret
       return composeHDCenter(request.chart, request.focus);
     case "hdGate":
       return composeHDGate(request.chart, request.focus);
+    case "angle":
+      return composeAngle(request.chart, request.focus);
   }
 }
 

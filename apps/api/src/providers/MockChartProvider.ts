@@ -8,7 +8,7 @@ import type {
   BirthData, ChartBundle, HDChart, HDGateActivation,
   HouseCusp, NatalChart, Planet, PlanetPlacement, TransitSnapshot,
 } from "@inner/shared";
-import { computeAspects, computeCrossAspects, equalHouseCusps, houseForDegree, normalizeDegree, signForDegree } from "../astro/geometry.js";
+import { angleForDegree, computeAspects, computeCrossAspects, houseForDegree, normalizeDegree, signForDegree, wholeSignHouseCusps } from "../astro/geometry.js";
 import { GATE_CENTER } from "../hd/reference.js";
 import { deriveHumanDesignChart } from "../hd/derive.js";
 import { SeededRandom } from "../util/seededRandom.js";
@@ -113,15 +113,21 @@ export class MockChartProvider implements ChartProvider {
     const placements = buildPlacements(rand, sunDegree);
 
     const hasTime = birthData.time !== null;
-    // NOT a real ascendant calculation (that needs sidereal time + obliquity
-    // + latitude) — a labeled placeholder so the UI has something to render
-    // and click on before a hosted API supplies the real value.
+    // NOT real calculations (those need sidereal time + obliquity + latitude,
+    // or for Vertex specifically the co-latitude/prime-vertical formula) — a
+    // labeled placeholder so the UI has something to render and click on
+    // before a hosted API supplies the real values.
     const ascendantDegree = hasTime ? rand.next() * 360 : null;
     const midheavenDegree = ascendantDegree !== null ? normalizeDegree(ascendantDegree - 90) : null;
+    const vertexDegree = hasTime ? rand.next() * 360 : null;
+    const antiVertexDegree = vertexDegree !== null ? normalizeDegree(vertexDegree + 180) : null; // real: always exactly opposite
+
+    const northNode = placements.find((p) => p.planet === "NorthNode");
+    const southNodeDegree = northNode ? normalizeDegree(northNode.absoluteDegree + 180) : null; // real: always exactly opposite
 
     let houses: HouseCusp[] = [];
     if (ascendantDegree !== null) {
-      const cusps = equalHouseCusps(ascendantDegree);
+      const cusps = wholeSignHouseCusps(ascendantDegree);
       houses = buildHouses(cusps);
       for (const p of placements) p.house = houseForDegree(p.absoluteDegree, cusps);
     }
@@ -129,8 +135,11 @@ export class MockChartProvider implements ChartProvider {
     const natal: NatalChart = {
       id: randomUUID(),
       birthData,
-      ascendant: ascendantDegree !== null ? signForDegree(ascendantDegree) : null,
-      midheaven: midheavenDegree !== null ? signForDegree(midheavenDegree) : null,
+      ascendant: ascendantDegree !== null ? angleForDegree(ascendantDegree) : null,
+      midheaven: midheavenDegree !== null ? angleForDegree(midheavenDegree) : null,
+      vertex: vertexDegree !== null ? angleForDegree(vertexDegree) : null,
+      antiVertex: antiVertexDegree !== null ? angleForDegree(antiVertexDegree) : null,
+      southNode: southNodeDegree !== null ? angleForDegree(southNodeDegree) : null,
       placements,
       houses,
       aspects: computeAspects(placements),

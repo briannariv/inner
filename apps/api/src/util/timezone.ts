@@ -12,7 +12,7 @@ export interface ResolvedTimezone {
   utcOffsetHours: number; // e.g. 5.5 for IST, -4 for EDT
 }
 
-export function resolveTimezone(date: string, time: string, lat: number, lon: number): ResolvedTimezone {
+function localDateTime(date: string, time: string, lat: number, lon: number): DateTime {
   const zones = findTimezone(lat, lon);
   const ianaZone = zones[0];
   if (!ianaZone) {
@@ -22,5 +22,18 @@ export function resolveTimezone(date: string, time: string, lat: number, lon: nu
   if (!dt.isValid) {
     throw new Error(`Could not resolve local time ${date}T${time} in zone ${ianaZone}: ${dt.invalidReason}`);
   }
-  return { ianaZone, utcOffsetHours: dt.offset / 60 };
+  return dt;
+}
+
+export function resolveTimezone(date: string, time: string, lat: number, lon: number): ResolvedTimezone {
+  const dt = localDateTime(date, time, lat, lon);
+  return { ianaZone: dt.zoneName!, utcOffsetHours: dt.offset / 60 };
+}
+
+// Native Date doesn't know the birth location's timezone — `new Date(isoStringWithoutZ)`
+// parses in *this process's* local time, which is wrong for a birth instant
+// in another zone. Route everything that needs a real UTC instant through
+// luxon's zone-aware parsing instead.
+export function resolveBirthInstantUtc(date: string, time: string, lat: number, lon: number): Date {
+  return localDateTime(date, time, lat, lon).toUTC().toJSDate();
 }
