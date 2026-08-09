@@ -15,6 +15,7 @@
     "express": "^4.19.2",
     "geo-tz": "^8.1.8",
     "luxon": "^3.7.2",
+    "sweph": "^2.10.3-7",
     "zod": "^3.23.8"
   },
   "devDependencies": {

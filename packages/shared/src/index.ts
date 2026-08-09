@@ -96,10 +96,16 @@ export interface HDCenter {
   defined: boolean;
 }
 
+// HD's 13 traditional measuring points are astrology's 12 planets/nodes
+// minus Chiron, plus Earth (always exactly opposite the Sun) and South Node
+// (always exactly opposite North Node) — neither is a real astrology
+// placement, so neither belongs in the Planet union used for the chart wheel.
+export type HDActivationBody = Planet | "Earth" | "SouthNode";
+
 export interface HDGateActivation {
   gate: number; // 1-64
   line: number; // 1-6
-  planet: Planet;
+  planet: HDActivationBody;
   source: "personality" | "design"; // conscious (birth) vs unconscious (~88 days prior)
 }
 

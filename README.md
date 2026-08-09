@@ -12,15 +12,21 @@ packages/shared/ Shared TypeScript types used by both apps
 
 ## Status
 
-First working end-to-end slice per the SPEC.md roadmap: enter birth data → generate a chart → interactive natal wheel (tap a planet for a chart-aware description) and Human Design bodygraph (tap a center) → toggle today's transits on the wheel.
+End-to-end slice per the SPEC.md roadmap: enter birth data → generate a chart → interactive natal wheel (tap any planet or chart angle for a chart-aware description) and Human Design bodygraph (tap a center) → toggle today's transits → astrocartography lines.
 
-**Chart data defaults to `MockChartProvider`** (`apps/api/src/providers/MockChartProvider.ts`) — deterministic, structurally-plausible data with no external calls. Set `CHART_PROVIDER=hosted` (see `.env.example`) to switch to `HostedChartProvider` (`apps/api/src/providers/hosted/`), which calls astrologyapi.com for the natal chart and humandesignapi.nl for the Human Design bodygraph.
+**Chart data now defaults to `EphemerisChartProvider`** (`apps/api/src/providers/EphemerisChartProvider.ts`) — real Swiss Ephemeris positions via the `sweph` bindings (Moshier analytic mode: no `.se1` data files, no network calls at runtime) and a Human Design engine built from the documented gate/line formula. `CHART_PROVIDER=mock` and `CHART_PROVIDER=hosted` (see `.env.example`) are still available for deterministic-placeholder or third-party-vendor testing, but neither is the default anymore.
 
-**⚠️ The hosted integration is unverified against live accounts.** This sandbox's network policy blocks fetching either vendor's docs directly, and no API keys were available to test a real call. The request shapes (auth method, endpoint URLs, body fields) are corroborated by public sources; the *response* field names in `mapAstrologyApiResponse.ts` / `mapHumanDesignApiResponse.ts` are best-effort guesses that validate strictly and throw a descriptive error (dumping the actual keys received) on any mismatch, rather than silently mis-mapping. Get API keys for both vendors, set them in `apps/api/.env`, and run one real request — whatever error comes back will point at exactly which field-name guess to fix.
+⚠️ **Licensing:** Swiss Ephemeris (and `sweph`) is AGPL/commercial dual-licensed. Fine for prototyping; needs Astrodienst's commercial license (or open-sourcing this service) before shipping to real users — flagged in SPEC.md §4/§6, now actually relevant since it's wired in rather than hypothetical.
 
-Astrology aspect/house/sign math in `apps/api/src/astro/geometry.ts` is real and provider-independent — it's applied identically whether placements come from the mock or a vendor. Human Design centers/channels/Type/Authority/Profile are derived from raw gate activations by `apps/api/src/hd/derive.ts` (shared by both providers) rather than trusted from vendor-phrased fields, using the reference table in `apps/api/src/hd/reference.ts` (labeled best-effort, pending verification). Swapping providers is a one-file change in `apps/api/src/providers/index.ts`.
+**What's real vs. sourced-not-verified:**
+- Planetary positions, Whole Sign houses, Ascendant/Midheaven/Vertex — real, computed by Swiss Ephemeris itself (`houses_ex2`), not hand-derived formulas.
+- Human Design gate/line mapping (`apps/api/src/hd/mandala.ts`) and the gate→center table (`apps/api/src/hd/reference.ts`) — cross-checked byte-for-byte against `dturkuler/humandesign_api`, an independent open-source implementation, and matched exactly on all 36 channels. Good corroboration, but still one secondary source rather than a direct astro.com/Jovian Archive reference — worth a final check against a known published chart before this powers a real product.
+- Astrocartography lines (`apps/api/src/astro/astrocartography.ts`) — real spherical astronomy (Julian date → GMST → ecliptic-to-equatorial → MC/IC/AC/DC solutions), sanity-checked against a real birth instant (Sun's MC line landed almost exactly on the birth longitude for a birth near local solar noon, as it should).
+- Design (~88° solar arc) calculation — delegates to Swiss Ephemeris's own `solcross_ut` root-finder rather than a hand-rolled one.
 
-Interpretation copy is split per SPEC.md §6: astrology content (`apps/api/src/interpretation/astrologyContent.ts`) is minimal starter keywords for the founder to rewrite in their own voice; Human Design content (`apps/api/src/interpretation/humanDesignContent.ts`) is a first-pass draft that needs founder review before shipping to real users.
+The old hosted-vendor integration (`apps/api/src/providers/hosted/`, astrologyapi.com + humandesignapi.nl) is still there and still unverified against live accounts — see the comments in that directory if picking that path back up.
+
+Human Design centers/channels/Type/Authority/Profile are derived from raw gate activations by `apps/api/src/hd/derive.ts` (shared by all three providers). Interpretation copy is split per SPEC.md §6: astrology content (`apps/api/src/interpretation/astrologyContent.ts`) is minimal starter keywords for the founder to rewrite in their own voice; Human Design content (`apps/api/src/interpretation/humanDesignContent.ts`) is a first-pass draft that needs founder review before shipping to real users.
 
 ## Running it
 
@@ -38,4 +44,4 @@ Before running on a physical device or Android emulator, update `apps/mobile/src
 
 ## Not yet built
 
-Everything past the first slice in SPEC.md's phasing: Astrocartography, Friends/connections + compatibility, the Spark Audit, education section, electional astrology history, and the real ephemeris/HD vendor integration.
+Astrocartography/mobile UI (API is ready, mobile screen isn't), Friends/connections + compatibility, the Spark Audit, education section, electional astrology history, and the AGPL commercial license this now actually needs before real users touch it.

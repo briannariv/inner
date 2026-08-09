@@ -5,6 +5,7 @@
 // one-file change instead of a rewrite.
 import type { ChartProvider } from "./ChartProvider.js";
 import { MockChartProvider } from "./MockChartProvider.js";
+import { EphemerisChartProvider } from "./EphemerisChartProvider.js";
 import { HostedChartProvider } from "./hosted/HostedChartProvider.js";
 
 function requireEnv(name: string): string {
@@ -21,8 +22,15 @@ let cached: ChartProvider | null = null;
 
 export function getChartProvider(): ChartProvider {
   if (!cached) {
-    const kind = process.env.CHART_PROVIDER ?? "mock";
+    // Default is now "ephemeris" — real Swiss Ephemeris (sweph, Moshier
+    // mode) positions and a real Human Design gate engine, no external
+    // network/API keys needed. "mock" stays available for pure
+    // no-native-addon dev/testing; "hosted" for the third-party vendor path.
+    const kind = process.env.CHART_PROVIDER ?? "ephemeris";
     switch (kind) {
+      case "ephemeris":
+        cached = new EphemerisChartProvider();
+        break;
       case "mock":
         cached = new MockChartProvider();
         break;
@@ -37,7 +45,7 @@ export function getChartProvider(): ChartProvider {
         );
         break;
       default:
-        throw new Error(`Unknown CHART_PROVIDER "${kind}" — expected "mock" or "hosted".`);
+        throw new Error(`Unknown CHART_PROVIDER "${kind}" — expected "ephemeris", "mock", or "hosted".`);
     }
   }
   return cached;

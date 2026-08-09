@@ -3,14 +3,14 @@
 // (I Ching gate numbers and center names), not Jovian Archive's proprietary
 // chart artwork or trademarked terminology — safe to encode directly.
 //
-// IMPORTANT: this mapping is reconstructed from general HD knowledge for
-// the purposes of this MVP mock provider ONLY. It has NOT been cross-checked
-// against an authoritative source or the hosted HD APIs evaluated in
-// SPEC.md §6. Treat every gate/channel/center assignment below as
-// "needs verification" before any of this powers a real user-facing chart —
-// once a hosted HD API is contracted, this file's job (fabricating gate
-// data) goes away entirely and only the HDCenterName/gate-number types
-// downstream keep being used.
+// Originally reconstructed from general HD knowledge; since then
+// cross-checked gate-by-gate and channel-by-channel against
+// dturkuler/humandesign_api (an independent, AGPL/commercial-dual-licensed
+// open-source implementation) and matched exactly on all 36 channels/64
+// gate-center assignments. That's good independent corroboration, but it's
+// still one secondary source, not astro.com/Jovian Archive directly — worth
+// a final check against a known-good published chart before this powers a
+// real user-facing product.
 import type { HDCenterName } from "@inner/shared";
 
 export const CENTERS: HDCenterName[] = [
