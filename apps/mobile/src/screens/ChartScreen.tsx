@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { AstrocartographyLine, HDCenterName, Planet, PlanetPlacement, InterpretationResult } from "@inner/shared";
+import type {
+  AstrocartographyLine, HDCenterName, Planet, PlanetPlacement, InterpretationResult,
+  ZodiacSign, ZodiacSignProfile,
+} from "@inner/shared";
+import { ZODIAC_SIGN_PROFILES } from "@inner/shared";
 import type { RootStackParamList } from "../navigation";
 import { getAstrocartography, getInterpretation, getTransits } from "../api/client";
 import { NatalWheel } from "../components/NatalWheel";
@@ -11,7 +15,7 @@ import { InterpretationPanel } from "../components/InterpretationPanel";
 import { theme } from "../theme";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Chart">;
-type Tab = "astrology" | "humanDesign" | "astrocartography";
+type Tab = "astrology" | "humanDesign" | "astrocartography" | "learn";
 
 function describeAstrocartographyLine(line: AstrocartographyLine): string {
   return (
@@ -20,6 +24,13 @@ function describeAstrocartographyLine(line: AstrocartographyLine): string {
     `lines mark where ${line.planet} was rising and setting at each latitude. Living near a line is ` +
     `traditionally read as amplifying that planet's themes in daily life. Line math is real spherical ` +
     `astronomy computed from your chart; see apps/api/src/astro/astrocartography.ts.`
+  );
+}
+
+function describeZodiacSign(p: ZodiacSignProfile): string {
+  return (
+    `${p.description.long} Motto: "${p.motto}" ${p.gifts} ${p.challenges} ` +
+    `Ruled by ${p.rulingPlanet} · ${p.element} · ${p.modality}. Most compatible with ${p.compatibleSigns.join(", ")}.`
   );
 }
 
@@ -39,6 +50,7 @@ export function ChartScreen({ route }: Props) {
   const [astroLoading, setAstroLoading] = useState(false);
   const [astroError, setAstroError] = useState<string | null>(null);
   const [selectedAstroPlanet, setSelectedAstroPlanet] = useState<Planet | null>(null);
+  const [selectedSign, setSelectedSign] = useState<ZodiacSign | null>(null);
 
   async function handleSelectPlanet(planet: Planet) {
     setSelectedPlanet(planet);
@@ -101,12 +113,22 @@ export function ChartScreen({ route }: Props) {
     setPanelResult({ headline: `${planet} lines`, body: describeAstrocartographyLine(line) });
   }
 
+  function handleSelectSign(profile: ZodiacSignProfile) {
+    setSelectedSign(profile.sign);
+    setPanelVisible(true);
+    setPanelResult({
+      headline: `${profile.symbol} ${profile.sign} — ${profile.symbolName}`,
+      body: describeZodiacSign(profile),
+    });
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
         <TabButton label="Astrology" active={tab === "astrology"} onPress={() => setTab("astrology")} />
         <TabButton label="Human Design" active={tab === "humanDesign"} onPress={() => setTab("humanDesign")} />
         <TabButton label="Astrocartography" active={tab === "astrocartography"} onPress={openAstrocartographyTab} />
+        <TabButton label="Learn" active={tab === "learn"} onPress={() => setTab("learn")} />
       </ScrollView>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -164,6 +186,23 @@ export function ChartScreen({ route }: Props) {
                 </View>
               </>
             )}
+          </>
+        )}
+        {tab === "learn" && (
+          <>
+            <Text style={styles.hint}>The zodiac signs — tap one for a full read.</Text>
+            <View style={styles.astroList}>
+              {ZODIAC_SIGN_PROFILES.map((profile) => (
+                <Pressable
+                  key={profile.sign}
+                  style={[styles.astroRow, selectedSign === profile.sign && styles.astroRowSelected]}
+                  onPress={() => handleSelectSign(profile)}
+                >
+                  <Text style={styles.astroRowText}>{profile.symbol} {profile.sign}</Text>
+                  <Text style={styles.astroRowMeta}>{profile.element} · {profile.dates.start}–{profile.dates.end}</Text>
+                </Pressable>
+              ))}
+            </View>
           </>
         )}
       </ScrollView>
