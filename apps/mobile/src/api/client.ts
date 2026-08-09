@@ -1,5 +1,5 @@
 import type {
-  BirthData, ChartBundle, InterpretationRequest, InterpretationResult, TransitSnapshot,
+  AstrocartographyResult, BirthData, ChartBundle, InterpretationRequest, InterpretationResult, TransitSnapshot,
 } from "@inner/shared";
 import { API_BASE_URL } from "../config";
 
@@ -30,4 +30,8 @@ export function getInterpretation(request: InterpretationRequest): Promise<Inter
 
 export function getHdSummary(chart: ChartBundle): Promise<InterpretationResult> {
   return post<InterpretationResult>("/charts/hd-summary", { chart });
+}
+
+export function getAstrocartography(birthData: BirthData): Promise<AstrocartographyResult> {
+  return post<AstrocartographyResult>("/charts/astrocartography", birthData);
 }
