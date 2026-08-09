@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Inner",
+    "slug": "inner",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.inner.app"
+    },
+    "android": {
+      "package": "com.inner.app"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

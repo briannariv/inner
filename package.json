@@ -1,0 +1,8 @@
+{
+  "name": "inner",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

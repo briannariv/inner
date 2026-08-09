@@ -105,12 +105,28 @@ No ads at any tier — the free tier has to feel generous on its own (this is a 
 
 ---
 
-## 6. Open questions for you
+## 6. Decisions (locked in)
 
-1. MVP ephemeris approach: pay for a hosted astrology API now, or go straight to self-hosted Swiss Ephemeris + commercial license? (Cost vs. speed tradeoff above.)
-2. Do you want the HD "Design" calculation and gate wheel built from first principles (I compute it from raw ephemeris data, fully under your control), or would you rather integrate a existing HD API/library for V1 and swap later? First-principles is more work up front but avoids a second vendor dependency alongside the astrology ephemeris.
-3. For the Spark Audit content — do you want to hand-write/curate the interpretation templates yourself (leaning on your astrology expertise, which also solves the "your HD knowledge is still growing" problem by having you review before anything ships), or should I draft a first-pass template library for you to edit?
+1. **Ephemeris/chart data — hosted API for MVP, self-host later.** Both astrology and Human Design chart math will come from third-party hosted APIs at MVP, called through a swappable provider adapter in the backend so we can migrate to a self-hosted Swiss Ephemeris service (with an Astrodienst commercial license) once volume/cost justifies owning it, without touching app code above the adapter.
+2. **Human Design also comes from a hosted API for MVP** (not built from first principles yet) — consistent with the astrology decision, same migration path later.
+3. **Content authoring is split by expertise:** the founder drafts/curates astrology interpretation content (chart-click descriptions, Spark Audit astrology sections) directly, since that's the founder's strength; Human Design interpretation templates get a first-pass draft written up front (by me, using solid general HD reference knowledge) for the founder to review and correct — this unblocks building the interactive HD UI now while HD fluency is still being built, with review as a gate before anything ships to users.
+
+### Candidate hosted providers (researched, not yet contracted)
+
+**Astrology:**
+- [astrologyapi.com](https://astrologyapi.com/) — planetary positions, house cusps, aspects, synastry/composite charts, clean JSON.
+- [RoxyAPI](https://roxyapi.com/products/astrology-api) — natal charts, 4 house systems, aspect-pattern detection, synastry compatibility scores.
+- [Astrologer API](https://github.com/g-battaglia/Astrologer-API) (Kerykeion-based, open source) — natal/synastry/transits/composites/returns as SVG+JSON; notable as a possible *self-hosted* fallback too since it's open source, worth a closer look before committing to a paid vendor.
+- [DivineAPI](https://divineapi.com/) — broad endpoint catalog (300+), includes Vedic in addition to Western.
+
+**Human Design:**
+- [Human Design Hub](https://humandesignhub.app/) — REST API, full bodygraph JSON (type, strategy, authority, profile, centers, gates, channels, circuits).
+- [Human Design Core](https://www.humandesigncore.com/en) — free tier (50 req/mo) to start, paid tiers scale — good fit for early dev/testing without committing spend.
+- [Bodygraph.com](https://bodygraph.com/human-design-api/) — chart data + rendered bodygraph images.
+- [dturkuler/humandesign_api](https://github.com/dturkuler/humandesign_api) (GitHub, Swiss-Ephemeris-based, open source) — another possible self-hosted fallback later, worth keeping on the radar for the post-MVP migration.
+
+Next step before contracting: compare these on pricing at expected volume, data completeness (does it give lines/profile/incarnation cross, not just gates), and rate limits — not done yet, flagging as a pre-launch task rather than picking one blind here.
 
 ---
 
-*Next step once you sign off on direction: scaffold the Expo app + API skeleton and build the thin end-to-end slice — enter birth data → see your interactive natal chart — as the first working milestone.*
+*Next step: scaffold the Expo app + API skeleton and build the thin end-to-end slice — enter birth data → see your interactive natal chart and HD bodygraph — using a mock provider behind the adapter (no vendor keys yet), so the UI and interaction model can be built and reviewed before any vendor contract is signed.*
