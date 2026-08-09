@@ -6,8 +6,10 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { BirthData, CompatibilityResult, HDConnectionChannel } from "@inner/shared";
-import { getCompatibility } from "../api/client";
+import { getHDGateProfile } from "@inner/shared";
+import { getCompatibility, getInterpretation } from "../api/client";
 import { theme } from "../theme";
+import { GateGrid } from "./GateGrid";
 import { PrimaryButton } from "./PrimaryButton";
 
 const CONNECTION_TYPE_LABEL: Record<HDConnectionChannel["type"], string> = {
@@ -28,6 +30,18 @@ const CONNECTION_TYPE_EXPLANATION: Record<HDConnectionChannel["type"], string> =
     "one of you consistently supplies it for the pair.",
 };
 
+function describeConnection(nameA: string, nameB: string, c: HDConnectionChannel): string {
+  const [gateA, gateB] = c.gates;
+  const profileA = getHDGateProfile(gateA);
+  const profileB = getHDGateProfile(gateB);
+  const gateClause = profileA && profileB
+    ? `Gate ${gateA} (${profileA.name}) and Gate ${gateB} (${profileB.name}) together. `
+    : "";
+  const who = c.type === "dominance" ? (c.dominantPerson === "A" ? nameA : nameB) : null;
+  const dominanceClause = who ? ` In this pairing, that's ${who}.` : "";
+  return `${gateClause}${CONNECTION_TYPE_EXPLANATION[c.type]}${dominanceClause}`;
+}
+
 interface Props {
   myName: string;
   myBirthData: BirthData;
@@ -35,15 +49,17 @@ interface Props {
 }
 
 export function CompatibilityView({ myName, myBirthData, onShowDetail }: Props) {
-  const [name, setName] = useState("");
-  const [date, setDate] = useState("1998-11-02");
-  const [time, setTime] = useState("08:20");
-  const [locationName, setLocationName] = useState("Austin, TX, USA");
-  const [lat, setLat] = useState("30.2672");
-  const [lon, setLon] = useState("-97.7431");
+  const [name, setName] = useState("Kat");
+  const [date, setDate] = useState("1998-05-14");
+  const [time, setTime] = useState("09:11");
+  const [locationName, setLocationName] = useState("Gołdap, Poland");
+  const [lat, setLat] = useState("54.3325");
+  const [lon, setLon] = useState("22.3053");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CompatibilityResult | null>(null);
+  const [selectedGateA, setSelectedGateA] = useState<number | null>(null);
+  const [selectedGateB, setSelectedGateB] = useState<number | null>(null);
 
   async function handleCalculate() {
     setError(null);
@@ -83,6 +99,16 @@ export function CompatibilityView({ myName, myBirthData, onShowDetail }: Props) 
     }
   }
 
+  async function handleSelectGate(who: "A" | "B", gate: number) {
+    if (!result) return;
+    const chart = who === "A" ? result.personA.chart : result.personB.chart;
+    (who === "A" ? setSelectedGateA : setSelectedGateB)(gate);
+    onShowDetail("Loading…", "");
+    const interp = await getInterpretation({ chart, focus: { kind: "hdGate", gate } });
+    const whoName = who === "A" ? result.personA.name : result.personB.name;
+    onShowDetail(`${whoName} — ${interp.headline}`, interp.body);
+  }
+
   if (result) {
     const harmonious = result.synastryAspects.filter((a) => a.type === "trine" || a.type === "sextile").length;
     const challenging = result.synastryAspects.filter((a) => a.type === "square" || a.type === "opposition").length;
@@ -109,7 +135,12 @@ export function CompatibilityView({ myName, myBirthData, onShowDetail }: Props) 
             <Pressable
               key={c.gates.join("-")}
               style={styles.row}
-              onPress={() => onShowDetail(`${c.name} — ${CONNECTION_TYPE_LABEL[c.type]}`, CONNECTION_TYPE_EXPLANATION[c.type])}
+              onPress={() =>
+                onShowDetail(
+                  `${c.name} — ${CONNECTION_TYPE_LABEL[c.type]}`,
+                  describeConnection(result.personA.name, result.personB.name, c)
+                )
+              }
             >
               <Text style={styles.rowText}>{c.name}</Text>
               <Text style={styles.rowMeta}>{CONNECTION_TYPE_LABEL[c.type]}</Text>
@@ -126,6 +157,12 @@ export function CompatibilityView({ myName, myBirthData, onShowDetail }: Props) 
             </View>
           ))}
         </View>
+
+        <Text style={styles.sectionLabel}>{result.personA.name}'s full gate chart</Text>
+        <GateGrid gates={result.personA.chart.humanDesign.gates} selectedGate={selectedGateA} onSelectGate={(g) => handleSelectGate("A", g)} compact />
+
+        <Text style={[styles.sectionLabel, styles.secondGridLabel]}>{result.personB.name}'s full gate chart</Text>
+        <GateGrid gates={result.personB.chart.humanDesign.gates} selectedGate={selectedGateB} onSelectGate={(g) => handleSelectGate("B", g)} compact />
 
         <Pressable style={styles.resetButton} onPress={() => setResult(null)}>
           <Text style={styles.resetButtonText}>Check compatibility with someone else</Text>
@@ -210,6 +247,7 @@ const styles = StyleSheet.create({
   summaryMeta: { color: theme.textMuted, marginTop: 6, fontSize: 12 },
   summaryTap: { color: theme.accent, marginTop: 10, fontSize: 11 },
   sectionLabel: { color: theme.text, fontWeight: "700", fontSize: 14, marginBottom: 6, alignSelf: "flex-start" },
+  secondGridLabel: { marginTop: 16 },
   list: { width: "100%", borderTopWidth: 1, borderTopColor: theme.border, marginBottom: 20 },
   emptyText: { color: theme.textMuted, fontSize: 13, paddingVertical: 12 },
   row: {
@@ -223,6 +261,6 @@ const styles = StyleSheet.create({
   },
   rowText: { color: theme.text, fontSize: 13 },
   rowMeta: { color: theme.textMuted, fontSize: 12 },
-  resetButton: { alignSelf: "center", marginTop: 4, marginBottom: 20 },
+  resetButton: { alignSelf: "center", marginTop: 20, marginBottom: 20 },
   resetButtonText: { color: theme.accent, fontSize: 13 },
 });

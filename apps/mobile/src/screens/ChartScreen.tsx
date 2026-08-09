@@ -5,7 +5,7 @@ import type {
   AstrocartographyLine, HDCenterName, Planet, PlanetPlacement, InterpretationResult,
   ZodiacSign, ZodiacSignProfile,
 } from "@inner/shared";
-import { ZODIAC_SIGN_PROFILES } from "@inner/shared";
+import { METHODOLOGY_SOURCES_BODY, METHODOLOGY_SOURCES_HEADLINE, ZODIAC_SIGN_PROFILES } from "@inner/shared";
 import type { RootStackParamList } from "../navigation";
 import { getAstrocartography, getInterpretation, getTransits } from "../api/client";
 import { NatalWheel } from "../components/NatalWheel";
@@ -43,6 +43,7 @@ export function ChartScreen({ route }: Props) {
 
   const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
   const [selectedCenter, setSelectedCenter] = useState<HDCenterName | null>(null);
+  const [selectedGate, setSelectedGate] = useState<number | null>(null);
   const [panelVisible, setPanelVisible] = useState(false);
   const [panelLoading, setPanelLoading] = useState(false);
   const [panelResult, setPanelResult] = useState<InterpretationResult | null>(null);
@@ -71,6 +72,29 @@ export function ChartScreen({ route }: Props) {
     setPanelLoading(true);
     try {
       const result = await getInterpretation({ chart: bundle, focus: { kind: "hdCenter", center } });
+      setPanelResult(result);
+    } finally {
+      setPanelLoading(false);
+    }
+  }
+
+  async function handleSelectGate(gate: number) {
+    setSelectedGate(gate);
+    setPanelVisible(true);
+    setPanelLoading(true);
+    try {
+      const result = await getInterpretation({ chart: bundle, focus: { kind: "hdGate", gate } });
+      setPanelResult(result);
+    } finally {
+      setPanelLoading(false);
+    }
+  }
+
+  async function handleSelectChannel(gates: [number, number]) {
+    setPanelVisible(true);
+    setPanelLoading(true);
+    try {
+      const result = await getInterpretation({ chart: bundle, focus: { kind: "hdChannel", gates } });
       setPanelResult(result);
     } finally {
       setPanelLoading(false);
@@ -157,6 +181,9 @@ export function ChartScreen({ route }: Props) {
             chart={bundle.humanDesign}
             selectedCenter={selectedCenter}
             onSelectCenter={handleSelectCenter}
+            selectedGate={selectedGate}
+            onSelectGate={handleSelectGate}
+            onSelectChannel={handleSelectChannel}
           />
         )}
         {tab === "astrocartography" && (
@@ -215,6 +242,16 @@ export function ChartScreen({ route }: Props) {
                 </Pressable>
               ))}
             </View>
+            <Pressable
+              style={styles.sourcesCard}
+              onPress={() => {
+                setPanelVisible(true);
+                setPanelResult({ headline: METHODOLOGY_SOURCES_HEADLINE, body: METHODOLOGY_SOURCES_BODY });
+              }}
+            >
+              <Text style={styles.sourcesCardTitle}>Sources & methodology</Text>
+              <Text style={styles.sourcesCardMeta}>What this app's astrology, chart math, and Human Design content is based on.</Text>
+            </Pressable>
           </>
         )}
       </ScrollView>
@@ -269,5 +306,14 @@ const styles = StyleSheet.create({
   },
   astroRowSelected: { backgroundColor: theme.surface },
   astroRowText: { color: theme.text, fontSize: 14 },
+  sourcesCard: {
+    width: "100%",
+    marginTop: 20,
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    padding: 16,
+  },
+  sourcesCardTitle: { color: theme.text, fontSize: 15, fontWeight: "700" },
+  sourcesCardMeta: { color: theme.textMuted, fontSize: 12, marginTop: 6 },
   astroRowMeta: { color: theme.textMuted, fontSize: 12 },
 });

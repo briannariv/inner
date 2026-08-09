@@ -35,7 +35,7 @@ compatibilityRouter.post("/synastry", asyncHandler(async (req, res) => {
 
   const synastryAspects = computeCrossAspects(chartA.natal.placements, chartB.natal.placements);
   const hdConnections = computeHDConnections(chartA.humanDesign.gates, chartB.humanDesign.gates);
-  const summary = composeCompatibilitySummary(personA.name, personB.name, synastryAspects, hdConnections);
+  const summary = composeCompatibilitySummary(personA.name, personB.name, chartA, chartB, synastryAspects, hdConnections);
 
   const result: CompatibilityResult = {
     personA: { name: personA.name, chart: chartA },
